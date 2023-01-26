@@ -4,6 +4,7 @@ from datetime import datetime
 def atualizar(moeda):
     # Carrega a data do sistema
     data_atual = datetime.now().date()
+    hora_atual = str(datetime.now())
     name_file = "cotacao_" + moeda + ".json"
 
     # Carrega o banco de dados
@@ -13,14 +14,24 @@ def atualizar(moeda):
 
     for x in cotacoes:
         dataHoraCotacao = x["dataHoraCotacao"]
+        tipo = x["tipoBoletim"]
+        print(tipo)
 
         # Filtra os valores da string
         data_cotacao = dataHoraCotacao.split(" ")
+        hora_cotacao = str(data_cotacao[1])
         data_cotacao = str(data_cotacao[0])
         data_atual = str(data_atual)
 
+        hora_atual = hora_atual.split(" ")
+        hora_atual = hora_atual[1].split(":")
+        hora_cotacao = hora_cotacao.split(":")
+
+        diferenca_hora = int(hora_atual[0]) - int(hora_cotacao[0])
+        diferenca_minutos = int(hora_atual[1]) - int(hora_cotacao[1])
+
     # Verifica se os dados estão atualizados
-    if data_atual == data_cotacao:
+    if data_atual == data_cotacao and tipo == "Fechamento":
         print("Não é necessario requisitar os dados, banco de dados atualizado")
         pass
 
@@ -32,8 +43,8 @@ def atualizar(moeda):
         cambio = str(moeda).upper()
 
         # Realiza a requisição dos dados na API
-        endpoint = "https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaPeriodoFechamento(codigoMoeda=@codigoMoeda,dataInicialCotacao=@dataInicialCotacao,dataFinalCotacao=@dataFinalCotacao)?@codigoMoeda='{}'&@dataInicialCotacao='{}'&@dataFinalCotacao='{}'&$format=json&$select=cotacaoCompra,cotacaoVenda,dataHoraCotacao,tipoBoletim"
-        endpoint = endpoint.format(cambio, formato_mes_dia_ano, formato_mes_dia_ano)
+        endpoint = "https://olinda.bcb.gov.br/olinda/servico/PTAX/versao/v1/odata/CotacaoMoedaAberturaOuIntermediario(codigoMoeda=@codigoMoeda,dataCotacao=@dataCotacao)?@codigoMoeda='{}'&@dataCotacao='{}'&$format=json&$select=cotacaoCompra,cotacaoVenda,dataHoraCotacao,tipoBoletim"
+        endpoint = endpoint.format(cambio, formato_mes_dia_ano)
         cotacao_requisitada = requests.get(endpoint)
         cotacao_moeda = cotacao_requisitada.json()['value']
 
@@ -42,4 +53,4 @@ def atualizar(moeda):
             json.dump(cotacao_moeda, outfile)
             print("Banco de dados atualizado com sucesso")
 
-atualizar("eur")
+atualizar("usd")
